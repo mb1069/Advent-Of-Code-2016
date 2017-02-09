@@ -24,8 +24,7 @@ applyToken x y dir turn dist = newPose ++ [newDir]
         newPose = getNewPose x y newDir dist
 
 getToken :: String -> (Char, Int)
-getToken token = (token !! 0, digitToInt token1)
-    where token1 = token !! 1
+getToken (dir:n) = (dir, read n :: Int)
 
 applyTokens :: Int -> Int -> Int -> [(Char, Int)] -> (Int, Int)
 applyTokens x y dir [] = (x, y)
@@ -41,5 +40,7 @@ applyTokens x y dir (t:ts) = applyTokens newX newY newDir (ts)
 main = do
     contents <- readFile "input.txt"
     let a = splitOn ", " contents
+    print $ a
     let a2 = map getToken a
-    print $ applyTokens 0 0 0 a2
+    let xy = applyTokens 0 0 0 a2
+    print $ abs (fst xy) + abs (snd xy)
