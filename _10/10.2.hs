@@ -15,13 +15,13 @@ instance Show (Bot) where
 getBot :: Index -> BotMap-> Bot
 getBot i m
     | (length bots == 1) = bots !! 0
-    | otherwise = Bot [] (-1) (-1)
+    | otherwise = Bot [] (-50) (-50)
     where
         bots = [b | (i2, b) <- Map.toList m, i2==i]
 
 -- Get indeces of bots with 2 values
 botHasTwoValues :: BotMap -> [Index]
-botHasTwoValues bots = [i | (i, bot) <- Map.toList bots, (length $ values bot) == 2, low bot > (-1), high bot > (-1)]
+botHasTwoValues bots = [i | (i, bot) <- Map.toList bots, (length $ values bot) == 2, low bot > (-50), high bot > (-50)]
 
 -- Give a value to a bot and disperse it as necessary
 giveValue :: Index -> Value -> BotMap -> BotMap
@@ -42,8 +42,7 @@ process2ValuedBots botmap
 -- Cascade a particular bot which has 2 values
 process2ValuedBot :: Index -> BotMap -> BotMap
 process2ValuedBot botInd oldM
-	| lowVal > highVal = error ("Invalid ordering")
-    | lowVal == 17 &&  highVal == 61 = error ("Found the bot : " ++ (show botInd))
+    | lowVal > highVal = error ("Invalid ordering")
     | otherwise = newM
     where
         bot = getBot botInd oldM
@@ -62,17 +61,21 @@ applyValueToken tok map = newMap
         botVal = read (toks !! 1) :: Value
         newMap = giveValue botInd botVal map
 
--- Process a token into linking bots 
+-- Process a token into linking bots together
 applyEdgeToken :: String -> BotMap -> BotMap
 applyEdgeToken tok map = newMap
-	where
-		toks = words tok
-		botInd  = read (toks !! 1) :: Index
-		botLow  = read (toks !! 6) :: Index
-		botHigh = read (toks !! 11) :: Index
-		bot = getBot botInd map 
-		newBot = Bot (values bot) botLow botHigh
-		newMap = Map.insert botInd newBot map
+    where
+        toks = words tok
+        botInd  = read (toks !! 1) :: Index
+
+        lowTok = read (toks !! 6) :: Index
+        highTok = read (toks !! 11) :: Index
+
+        botLow = if (toks !! 5) == "output" then ((-1)*lowTok)-1 else lowTok
+        botHigh = if (toks !! 10) == "output" then ((-1)*highTok)-1 else highTok
+        bot = getBot botInd map 
+        newBot = Bot (values bot) botLow botHigh
+        newMap = Map.insert botInd newBot map
 
 processToken :: String -> BotMap -> BotMap
 processToken tok map
@@ -83,4 +86,5 @@ main = do
     content <- readFile "input.txt"
     let tokens = splitOn "\n" content
     let botmap = Map.empty
-    print $ foldr (processToken) botmap tokens
+    let processedMap = foldr (processToken) botmap tokens
+    print $ foldr (*) 1 $ map (\x -> (values x) !! 0) [getBot (-1) processedMap, getBot (-2) processedMap, getBot (-3) processedMap]
